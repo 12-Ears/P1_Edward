@@ -1,0 +1,169 @@
+---
+title: "project_rmd"
+output: pdf_document
+date: "`r Sys.Date()`"
+---
+
+```{r setup, include = F}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Important Readings
+
+ISLR v2
+
+Chapter 05 - Resampling Methods (to handle small n)
+
+Chapter 06 - Linear Model Selection and Regularization (to handle large dimension)
+
+Chapter 08 - Tree-Based Methods
+
+Chapter 09 - SVM
+
+Chapter 10 - Deep Learning (CNN & RNN)
+
+# Import Libraries and Read Files
+
+```{r, message = F, warning = F}
+library('readxl')
+library('ggplot2')
+library('GGally')
+```
+
+```{r}
+filename <- 'Dataset/WBA_Final_Merged_Absorbance-Admittance-Phase-CMG_Reduced-Cleaned.xlsx'
+
+raw.absorbance <- read_excel(filename, sheet = 1)
+raw.admittance <- read_excel(filename, sheet = 2)
+raw.phase <- read_excel(filename, sheet = 3)
+```
+
+# Data Preprocessing
+
+### Separating Data into Frequency and Core
+
+```{r}
+freq.regex <- 'f[(]'
+freq.columns <- grep(freq.regex, names(raw.phase))
+
+# Extract Frequencies
+freq.admittance <- raw.admittance[ , freq.columns ]
+freq.phase <- raw.phase[ , freq.columns ]
+# absorbance has 2 less columns
+freq.absorbance <- raw.absorbance[ , freq.columns - 2 ] 
+
+# Extract Core Patient Information
+core.info <- raw.phase[ , -freq.columns ]
+```
+
+### Remove Columns
+
+```{r}
+unused.columns <- c(
+  # One Value Columns
+  'PTA0.5', # 20
+  'PTA1', # 20
+  'PTA2', # 20
+  'PTA4', # 20
+  'PTAAv4FA', # 20
+  'PTAAv4FAPoF', # P
+  'PTAAv4FAPoFC', # 0
+  
+  # Redundant Columns
+  'AgeY', # there's age in month AgeM
+  'DOT', 'DOB', # AgeM = DOT - DOB
+  'TympType', # derived from ECV, TPP, SC
+  # 'TympPoF', # derived from TympType
+  # 'OAEPoF', # derived from OAE1, OAE1.4, OAE2, OAE2.8, OAE4
+  
+  # Code Columns
+  'OAEPoFC', # OAEPoF
+  'Ear coded', # EarSide
+  
+  # NA Columns
+  'Unnamed: 49',
+  'Unnamed: 55',
+  'Unnamed: 64',
+  
+  # I think we don't need these
+  'Subject', 
+  'School', 
+  'SchoolCode',
+  
+  'Eth1',
+  'Eth2',
+  'Unnamed: 15',
+  'Lang1',
+  'Lang2',
+  'Lang3',
+  'Unnamed: 19',
+  'Pressure'
+)
+
+core.info <- core.info[ , !(names(core.info) %in% unused.columns) ]
+```
+
+### Clean NA Cells
+
+```{r}
+core.info$TPP[ is.na(core.info$TPP) ] <- median(core.info$TPP, na.rm = TRUE)
+core.info$SC[ is.na(core.info$SC) ] <- median(core.info$SC, na.rm = TRUE)
+```
+
+### Change negative values
+
+### Export to PDF HERE
+
+# Initial Inspections
+
+### Inspect Response Variable
+
+We got an imbalanced dataset.
+
+```{r}
+target <- 'OverallPoF'
+barplot(table(core.info[ target ]), col = c('red3', 'green3'))
+```
+
+### Frequency Predictor Variables
+
+```{r}
+boxplot(freq.absorbance)
+```
+
+```{r}
+boxplot(freq.admittance)
+```
+
+```{r}
+boxplot(freq.phase)
+```
+
+### Other Predictor Variables
+
+```{r}
+str(core.info)
+```
+
+```{r}
+ggplot(core.info, aes(as.factor(`Unnamed: 15`), ..count..)) + 
+  geom_bar(aes(fill = OverallPoF), position = 'dodge')
+```
+
+```{r}
+OAE.ggp <- ggpairs(columns = 13 : 17, data = core.info)
+print(OAE.ggp, progress = F)
+```
+
+```{r}
+ggplot(core.info, aes(EarSide, ..count..)) + 
+  geom_bar(aes(fill = OverallPoF), position = 'dodge')
+```
+
+```{r}
+for (col in names(core.info)) {
+  
+  if (class(core.info[[ col ]]) != 'numeric') next
+  hist(core.info[[ col ]], main = col)
+}
+```
