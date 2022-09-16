@@ -95,11 +95,14 @@ na_replacer <- function(vec) {
 
 # remove negatives on frequencies only
 rmv_neg_fq <- function(vec) {
+  col.names <- names(vec)
   freq.columns <- grep('f[(]', names(vec))
-  data.frame(
+  vec <- data.frame(
     vec[ -freq.columns ],
     sapply(vec[ freq.columns ], function(x) ifelse(x < 0, 0, x))
   )
+  names(vec) <- col.names
+  vec
 }
 
 round_down_fq <- function(vec) {
