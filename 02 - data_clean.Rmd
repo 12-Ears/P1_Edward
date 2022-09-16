@@ -1,0 +1,166 @@
+---
+title: "P1-Data-Clean"
+author: "Team 12 Ears"
+date: "2022-09-03"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Loading packages
+
+```{r Loading packages}
+library(readxl)
+library(tidyverse)
+library(ggplot2)
+
+```
+
+## Loading data
+
+```{r load data}
+filename <- '00 - Dataset/01 - Original XLSX/WBA_Final_Merged_Absorbance-Admittance-Phase-CMG_Reduced-Cleaned.xlsx'
+
+absorbance <- read_excel(filename, sheet = 1)
+yadmit <- read_excel(filename, sheet = 2)
+phase <- read_excel(filename, sheet = 3)
+
+```
+
+## Clean data
+
+### Head view of data
+
+```{r clean, echo=FALSE}
+
+head(absorbance)
+head(yadmit)
+head(phase)
+
+```
+
+### Clean and transformation functions
+
+```{r, echo=FALSE}
+
+feature_select <- function(df) {
+  unused.columns <- c('School'
+                  , 'SchoolCode'
+                  , 'Subject'
+                  , 'DOT'
+                  , 'DOB'
+                  , 'AgeY'
+                  , 'Eth1'
+                  , 'Eth2'
+                  , 'Unnamed: 15'
+                  , 'Lang1'
+                  , 'Lang2'
+                  , 'Lang3'
+                  , 'Unnamed: 19'
+                  , 'PTA0.5'
+                  , 'PTA1'
+                  , 'PTA2'
+                  , 'PTA4'
+                  , 'PTAAv4FA'
+                  , 'PTAAv4FAPoF'
+                  , 'PTAAv4FAPoFC'
+                  , 'Unnamed: 49'
+                  , 'TympType'
+                  , 'TympPoF'
+                  , 'Unnamed: 55'
+                  , 'Unnamed: 64'
+                  , 'OAEPoF'
+                  , 'OAEPoFC'
+                  , 'EarSide'
+                  , 'Pressure'
+  )
+  
+  df[ , !(names(df) %in% unused.columns) ]
+}
+
+
+median_finder <- function(vec) {
+  median(vec[ which(!is.na(vec)) ])
+}
+
+na_finder <- function(df) {
+  unlist(sapply(df, function(x) which(is.na(x))))
+}
+
+na_replacer <- function(vec) {
+  sapply(vec, function(x) ifelse(is.na(x) == 1, median_finder(vec), x))
+}
+
+# remove negatives on frequencies only
+rmv_neg_fq <- function(vec) {
+  freq.columns <- grep('f[(]', names(vec))
+  data.frame(
+    vec[ -freq.columns ],
+    sapply(vec[ freq.columns ], function(x) ifelse(x < 0, 0, x))
+  )
+}
+
+round_down_fq <- function(vec) {
+  freq.columns <- grep('f[(\\.]', names(vec))
+  col.names <- names(vec[ -freq.columns ])
+  
+  for (f in names(vec[ freq.columns ])) {
+    f <- as.numeric(substr(f, 3, nchar(f) - 1)) # extract numbers
+    f <- floor(f) # round down
+    f <- paste('f', f, sep = '') # convert back to string
+    col.names <- append(col.names, f)
+  }
+  names(vec) <- col.names
+  vec
+}
+
+```
+
+### Initial feature selection
+
+```{r clean, echo=FALSE}
+
+a_data <- feature_select(absorbance)
+y_data <- feature_select(yadmit)
+p_data <- feature_select(phase)
+```
+
+### Filling blanks or NA's
+
+```{r}
+
+a_data <- sapply(a_data, function(col) na_replacer(col))
+y_data <- sapply(y_data, function(col) na_replacer(col))
+p_data <- sapply(p_data, function(col) na_replacer(col))
+a_data <- as.data.frame(a_data)
+y_data <- as.data.frame(y_data)
+p_data <- as.data.frame(p_data)
+```
+
+### Removing negatives in frequencies
+
+```{r}
+a_data <- rmv_neg_fq(a_data)
+# y_data <- rmv_neg_fq(y_data)
+# p_data <- rmv_neg_fq(p_data)
+
+```
+
+### Rounding down frequencies
+
+```{r}
+a_data <- round_down_fq(a_data)
+y_data <- round_down_fq(y_data)
+p_data <- round_down_fq(p_data)
+```
+
+### Export csv
+
+```{r}
+write.csv(a_data, '00 - Dataset/02 - Cleaning Results/a_data.csv', row.names = FALSE)
+write.csv(y_data, '00 - Dataset/02 - Cleaning Results/y_data.csv', row.names = FALSE)
+write.csv(p_data, '00 - Dataset/02 - Cleaning Results/p_data.csv', row.names = FALSE)
+
+```
