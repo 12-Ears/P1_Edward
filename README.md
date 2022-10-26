@@ -10,7 +10,7 @@
   
 ### SVM version 3 (05.3)
 **Goal**: figure out whether to use other variables besides frequencies to make the prediction.  
-**Conclusion**: Only frequencies should be used. If other variables are included, results will be too good (from last week). This was discussed and confirmed by the client as well.  
+**Conclusion**: Only frequencies should be used. If other variables are included, results will be too good (from version 2). This was discussed and confirmed by the client as well.  
   
 ### SVM version 4 (05.4)
 **Goal**: explore feature selection methods.  
