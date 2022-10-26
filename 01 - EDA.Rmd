@@ -31,7 +31,7 @@ library('GGally')
 ```
 
 ```{r}
-filename <- 'Dataset/WBA_Final_Merged_Absorbance-Admittance-Phase-CMG_Reduced-Cleaned.xlsx'
+filename <- '00 - Dataset/01 - Original XLSX/WBA_Final_Merged_Absorbance-Admittance-Phase-CMG_Reduced-Cleaned.xlsx'
 
 raw.absorbance <- read_excel(filename, sheet = 1)
 raw.admittance <- read_excel(filename, sheet = 2)
